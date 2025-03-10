@@ -1,0 +1,166 @@
+{
+    "pattern_config": {
+        "wb": "(?:^|[_\\s-]|(?<=[a-z])(?=[A-Z])|(?<=[0-9])(?=[a-zA-Z]))",
+        "we": "(?:[_\\s-]|(?<=[A-Z])(?=[a-z])|$)",
+        "case_insensitive": "(?i)"
+    },
+    "base_patterns": {
+        "LOOP": "loop|loops|phrase|phrases|groove|riff|adlib",
+        "ONE SHOT": "one[\\s_-]*shot|oneshot|single[\\s_-]*hit|hit|stab|accent|impact|tail|slam"
+    },
+    "folder_structure": {
+        "BASS": ["LOOP", "ONE SHOT"],
+        "DRUMS": {
+            "CLAP": ["LOOP", "ONE SHOT"],
+            "CLOSED HAT": ["LOOP", "ONE SHOT"],
+            "CRASH-RIDE": ["LOOP", "ONE SHOT"],
+            "KICK": ["LOOP", "ONE SHOT"],
+            "LOOPS": [],
+            "OPEN HAT": ["LOOP", "ONE SHOT"],
+            "PERCUSSION": {
+                "BELL": ["LOOP", "ONE SHOT"],
+                "BONGO": ["LOOP", "ONE SHOT"],
+                "CLAV": ["LOOP", "ONE SHOT"],
+                "CONGA": ["LOOP", "ONE SHOT"],
+                "COWBELL": ["LOOP", "ONE SHOT"],
+                "CYMBAL": ["LOOP", "ONE SHOT"],
+                "PERC": ["LOOP", "ONE SHOT"],
+                "RIM": ["LOOP", "ONE SHOT"],
+                "SHAKER": ["LOOP", "ONE SHOT"],
+                "SNARE": ["LOOP", "ONE SHOT"],
+                "TAMBOURINE": ["LOOP", "ONE SHOT"],
+                "TIMBALS": ["LOOP", "ONE SHOT"],
+                "TOM": ["LOOP", "ONE SHOT"],
+                "WOOD": ["LOOP", "ONE SHOT"]
+            }
+        },
+        "FX": {
+            "AMBIENT": [],
+            "DRONE": [],
+            "LOOP": [],
+            "ONE SHOT": [],
+            "TEXTURE": []
+        },
+        "INSTRUMENTS": {
+            "LOOP": {
+                "CHORDS": [],
+                "PADS": [],
+                "STABS": [],
+                "SYNTH": []
+            },
+            "ONE SHOT": {
+                "ACOUSTIC": [],
+                "ACOUSTIC CHORDS": [],
+                "ACOUSTIC STABS": [],
+                "CHORDS": [],
+                "STABS": [],
+                "SYNTH": []
+            }
+        },
+        "VOCALS": ["LOOP", "ONE SHOT"],
+        "UNKNOWN": ["UNMATCHED_SAMPLES"]
+    },
+    "categories": {
+        "VOCALS": {
+            "mainPatterns": [
+                "vox|vocal|vocals|voice|voices|adlib|hook|chant|groan|phrase|verse|stack|sing|sung|female|male|choir|rap|acapella|vocal[\\s_-]*chop|vocalchop|scream|shout|whisper|talk|speak|spoken|speech|word|words|lyric|lyrics|line|lines|phrase|phrases|sentence|sentences|vocal|vocals|voice|voices|verse|bridge|hook|refrain|backing|lead|main|group|ensemble|solo|duet|trio|quartet|choir|choral|sing|singing|sang|sung|vocalist|singer|singers|rap|rapping|rapper|mc|emcee|dj|turntable|scratch|scratching|human|person|people|crowd|group|man|woman|boy|girl|child|adult"
+            ],
+            "subPatterns": {
+                "LOOP": "loop|loops|phrase|phrases|adlib|hook|chant|verse",
+                "ONE SHOT": "one[\\s_-]*shot|oneshot|single|vox|vocal|adlib|word"
+            }
+        },
+        "INSTRUMENTS": {
+            "mainPatterns": [
+                "synth|pad|lead|arp|pluck|chord|stab|piano|guitar|sax|horn|horns|keys|melody|melodic|fiddle|flute|bell|keys|rhodes|organ|tonal|electronic|mallet|string|brass|wind|bass|orchestral|drum|drums|percussion|beat|rhythm|groove|loop|sequence|pattern|arpeggio|scale|mode|note|notes|tone|tones|sound|sounds|instrument|instruments|musical|music|audio|sample|samples|oneshot|one[\\s_-]*shot|hit|hits|impact|impacts|attack|release|sustain|decay|envelope|filter|oscillator|wave|waveform|sine|square|saw|triangle|noise|ambient|atmosphere|pad|texture|effect|fx|synth|synthetic|digital|analog|acoustic|electric|electronic|orchestral|classical|jazz|rock|pop|hip[\\s_-]*hop|rap|electronic|edm|house|techno|dubstep|ambient|experimental|world|ethnic|traditional|modern"
+            ],
+            "subPatterns": {
+                "LOOP/CHORDS": "chord|chords|harmony|harmonies|progression|progressions|triad|triads|major|minor|diminished|augmented|seventh|ninth|sus|suspended|add|added|sharp|flat|natural|key|scale|mode|note|notes|tone|tones",
+                "LOOP/PADS": "pad|pads|atmosphere|ambient|space|warm|soft|smooth|lush|rich|full|thick|thin|light|heavy|dark|bright|mellow|harsh|sweet|sour|deep|shallow|high|low|mid",
+                "LOOP/STABS": "stab|stabs|hit|hits|accent|accents|impact|impacts|attack|attacks|punch|punches|strike|strikes|shot|shots|oneshot|one[\\s_-]*shot|single|singles",
+                "LOOP/SYNTH": "synth|synths|synthetic|electronic|digital|analog|oscillator|wave|waveform|sine|square|saw|triangle|noise|filter|envelope|attack|decay|sustain|release|modulation|lfo|effect|fx",
+                "ONE SHOT/ACOUSTIC": "acoustic|unplugged|natural|organic|wood|wooden|string|strings|brass|wind|woodwind|percussion|orchestral|classical|jazz|world|ethnic|traditional|real|live|instrument|instruments",
+                "ONE SHOT/ACOUSTIC CHORDS": "acoustic.*chord|chord.*acoustic",
+                "ONE SHOT/ACOUSTIC STABS": "acoustic.*stab|stab.*acoustic",
+                "ONE SHOT/CHORDS": "chord|chords|harmony|harmonies|progression|progressions|triad|triads|major|minor|diminished|augmented",
+                "ONE SHOT/STABS": "stab|stabs|hit|hits|accent|accents|impact|impacts|attack|attacks|punch|punches|strike|strikes",
+                "ONE SHOT/SYNTH": "synth|synths|synthetic|electronic|digital|analog|oscillator|wave|waveform"
+            }
+        },
+        "FX": {
+            "mainPatterns": [
+                "fx|effect|effects|impact|riser|down[\\s_-]*lifter|up[\\s_-]*lifter|drone|noise|sfx|sweep|whoosh|transition|buildup|magic|power|shield|armor|fantasy|magical|spell|buff|alien|cave|impact|hit|effect|atmosphere|ambience|tension|boom|drop|rise|fall|morph|transform|glitch|whip|swoosh|surge|blast|burst|swell|woosh|swish|flutter|swoop|sweep|rush|shimmer|shine|spark|glimmer|dark|bright|light|deep|shallow|high|low|mid|cosmic|space|wind|air|water|fire|earth|metal|crystal|glass|stone|wood|nature|synthetic|digital|analog|electric|electronic|mechanical|organic|processed"
+            ],
+            "subPatterns": {
+                "AMBIENT": "ambient|atmosphere|atmos|ambience|background|pad|texture|landscape|soundscape|environment|space|cosmic|ethereal|dreamy|floaty|airy|breathy|whispy|foggy|misty|hazy|cloudy|smoky|dusty|windy|stormy|rainy|thunder|lightning|weather|nature|organic|synthetic|processed",
+                "TEXTURE": "texture|textures|crusty|dirty|rough|smooth|soft|hard|sharp|dull|bright|dark|light|deep|shallow|high|low|mid|grainy|gritty|clean|clear|murky|muddy|wet|dry|processed|layered|complex|simple|pure|mixed|blended|filtered|distorted|warped|twisted|mangled|stretched|compressed|expanded|enhanced|reduced|modified",
+                "DRONE": "drone|drones|alien|cave|continuous|sustained|constant|steady|stable|unchanging|evolving|developing|growing|shrinking|morphing|transforming|shifting|changing|moving|static|dynamic|active|passive|background|foreground|underlying|overlying|base|foundation|ground|figure|ambient|atmospheric|environmental|spatial|temporal|harmonic|dissonant|consonant|tonal|atonal|noise|pure|complex|simple|synthetic|organic|processed",
+                "LOOP": "loop|loops|phrase|phrases|groove|riff|sweep|whoosh|transition|buildup",
+                "ONE SHOT": "one[\\s_-]*shot|oneshot|single|hit|stab|impact|impact|slam|burst|whoosh"
+            }
+        },
+        "DRUMS": {
+            "mainPatterns": [
+                "drum|drums|kick|bd|bass[\\s_-]*drum|snare|hat|hihat|hi[\\s_-]*hat|hh|h[\\s_-]*h|clap|cymbal|tom|percussion|perc|conga|bongo|rim|tambourine|shaker|cowbell|crash|ride|909|808|707|606"
+            ],
+            "subPatterns": {
+                "KICK/LOOP": "kicks|bd|bass[\\s_-]*drum",
+                "KICK/ONE SHOT": "kick|bd|bass[\\s_-]*drum",
+                "SNARE/LOOP": "snares",
+                "SNARE/ONE SHOT": "snare",
+                "CLAP/LOOP": "claps",
+                "CLAP/ONE SHOT": "clap",
+                "OPEN HAT/LOOP": "open.*hats|hat.*opens",
+                "OPEN HAT/ONE SHOT": "open.*hat|hat.*open",
+                "CLOSED HAT/LOOP": "hats|hihats|hi[\\s_-]*hats|hh|h[\\s_-]*hs",
+                "CLOSED HAT/ONE SHOT": "hat|hihat|hi[\\s_-]*hat|hh|h[\\s_-]*h",
+                "CRASH-RIDE/LOOP": "crashes|rides|cymbals",
+                "CRASH-RIDE/ONE SHOT": "crash|ride|cymbal",
+                "LOOPS": "loop|loops|beat|beats|groove|grooves",
+                "PERCUSSION/BELL/LOOP": "bells",
+                "PERCUSSION/BELL/ONE SHOT": "bell",
+                "PERCUSSION/SHAKER/LOOP": "shakers",
+                "PERCUSSION/SHAKER/ONE SHOT": "shaker",
+                "PERCUSSION/COWBELL/LOOP": "cowbells",
+                "PERCUSSION/COWBELL/ONE SHOT": "cowbell",
+                "PERCUSSION/TAMBOURINE/LOOP": "tambourines",
+                "PERCUSSION/TAMBOURINE/ONE SHOT": "tambourine",
+                "PERCUSSION/WOOD/LOOP": "woods|woodblocks",
+                "PERCUSSION/WOOD/ONE SHOT": "wood|woodblock",
+                "PERCUSSION/BONGO/LOOP": "bongos",
+                "PERCUSSION/BONGO/ONE SHOT": "bongo",
+                "PERCUSSION/CONGA/LOOP": "congas",
+                "PERCUSSION/CONGA/ONE SHOT": "conga",
+                "PERCUSSION/CYMBAL/LOOP": "cymbals",
+                "PERCUSSION/CYMBAL/ONE SHOT": "cymbal",
+                "PERCUSSION/RIM/LOOP": "rim",
+                "PERCUSSION/RIM/ONE SHOT": "rim",
+                "PERCUSSION/TIMBALS/LOOP": "timbals",
+                "PERCUSSION/TIMBALS/ONE SHOT": "timbal",
+                "PERCUSSION/TOM/LOOP": "toms",
+                "PERCUSSION/TOM/ONE SHOT": "tom",
+                "PERCUSSION/PERC/LOOP": "percs|percussions",
+                "PERCUSSION/PERC/ONE SHOT": "perc|percussion",
+                "PERCUSSION/CLAV/LOOP": "clavs|claves",
+                "PERCUSSION/CLAV/ONE SHOT": "clav|clave"
+            }
+        },
+        "BASS": {
+            "mainPatterns": [
+                "bass(?:[\\s_-]?line)?|808|sub|sub[\\s_-]*bass|subbass"
+            ],
+            "subPatterns": {
+                "LOOP": "loop|loops|phrase|phrases|groove|riff|bassline",
+                "ONE SHOT": "one[\\s_-]*shot|oneshot|single|hit|stab|808|sub"
+            }
+        }
+    },
+    "classification_priority": {
+        "VOCALS": 5,
+        "DRUMS": 4,
+        "INSTRUMENTS": 3,
+        "BASS": 2,
+        "FX": 1,
+        "UNKNOWN": 0
+    }
+}

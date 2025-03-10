@@ -1,0 +1,36 @@
+{
+    "source_path": "D:/Oscar/Documents/SOUNDS/SPLICEE",
+    "output_path": "organized_samples",
+    "patterns_file": "config/patterns.json",
+    "threads": 4,
+    "process_subfolders": true,
+    "overwrite_existing": false,
+    "move_files": false,
+    "generate_report": true,
+    "backup_original": false,
+    "enable_audio_analysis": true,
+    "ignore_patterns": [
+        ".DS_Store", 
+        "Thumbs.db", 
+        ".asd", 
+        ".ini", 
+        ".txt", 
+        ".md"
+    ],
+    "audio_extensions": [
+        ".wav", 
+        ".mp3", 
+        ".aif", 
+        ".aiff", 
+        ".ogg", 
+        ".flac", 
+        ".m4a"
+    ],
+    "logging_level": "INFO",
+    "analysis_timeout": 10,
+    "loop_min_duration": 1.0,
+    "oneshot_max_duration": 1.5,
+    "percussive_threshold": 0.6,
+    "harmonic_threshold": 0.6,
+    "high_energy_threshold": 0.7
+}
