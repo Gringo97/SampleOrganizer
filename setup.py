@@ -11,7 +11,7 @@ Options:
     --output, -o          Output directory
     --config, -c          Config directory
     --interactive, -i     Run in interactive mode
-    --verbose, -v         Enable verbose logging
+    --verbose, -v         Enable verbose logging  
     --clean               Clean output directory
     --threads, -t         Number of threads (0 = auto)
 """
@@ -25,8 +25,13 @@ import shutil
 import sys
 from pathlib import Path
 
+# Global variable for interactive mode
+interactive_mode = False
+
 def setup_project():
     """Set up the project structure with command-line arguments and configuration validation"""
+    global interactive_mode
+    
     parser = argparse.ArgumentParser(description='Audio Sample Organizer Setup')
     parser.add_argument('--source', '-s', type=str, help='Source directory containing audio samples')
     parser.add_argument('--output', '-o', type=str, help='Output directory for organized samples')
@@ -38,6 +43,9 @@ def setup_project():
                       help='Number of threads to use (0 = auto-detect)')
     
     args = parser.parse_args()
+    
+    # Set interactive mode based on args
+    interactive_mode = args.interactive
     
     # Configure logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
@@ -328,11 +336,17 @@ def validate_patterns_file(patterns_file):
             for section in ["base_patterns", "categories"]:
                 if section == "base_patterns":
                     for name, pattern in patterns[section].items():
+                        # Convert to string if needed
+                        if not isinstance(pattern, str):
+                            pattern = str(pattern) if not isinstance(pattern, (bytes, bytearray)) else pattern.decode('utf-8')
                         re.compile(pattern)
                 elif section == "categories":
                     for category, data in patterns[section].items():
                         if "mainPatterns" in data:
                             for pattern in data["mainPatterns"]:
+                                # Convert to string if needed
+                                if not isinstance(pattern, str):
+                                    pattern = str(pattern) if not isinstance(pattern, (bytes, bytearray)) else pattern.decode('utf-8')
                                 re.compile(pattern)
             
             logging.info(f"Patterns file validated: {patterns_file}")
@@ -391,8 +405,75 @@ def create_category_directories(patterns_file, output_dir):
     
     return folder_paths
 
+def get_cache_settings_interactive():
+    """Ask user for cache settings"""
+    print("\n=== CACHE SETTINGS ===")
+    print("The organizer can cache audio analysis results to improve performance")
+    print("on subsequent runs. This significantly speeds up processing when working")
+    print("with the same audio files repeatedly.")
+    
+    enable_cache = input("Enable audio analysis caching? (Y/n): ").strip().lower() != 'n'
+    
+    if not enable_cache:
+        return {
+            "enable_cache": False
+        }
+    
+    # Get cache file path
+    default_cache_file = "./cache/audio_analysis_cache.pkl"
+    print(f"\nDefault cache file: {default_cache_file}")
+    cache_file = input("Cache file path (press Enter for default): ").strip()
+    if not cache_file:
+        cache_file = default_cache_file
+    
+    # Get cache size limit
+    default_max_size = 100
+    print(f"\nDefault maximum cache size: {default_max_size} MB")
+    size_input = input("Maximum cache size in MB (press Enter for default): ").strip()
+    try:
+        max_size = int(size_input) if size_input else default_max_size
+    except ValueError:
+        print("Invalid input, using default value")
+        max_size = default_max_size
+    
+    # Get cache expiration
+    default_expiration = 30
+    print(f"\nDefault cache expiration period: {default_expiration} days")
+    exp_input = input("Cache expiration in days (press Enter for default): ").strip()
+    try:
+        expiration = int(exp_input) if exp_input else default_expiration
+    except ValueError:
+        print("Invalid input, using default value")
+        expiration = default_expiration
+    
+    # Background saving option
+    background_saving = input("\nEnable background cache saving? (Y/n): ").strip().lower() != 'n'
+    
+    return {
+        "enable_cache": enable_cache,
+        "cache_file": cache_file,
+        "max_cache_size_mb": max_size,
+        "cache_expiration_days": expiration,
+        "background_saving": background_saving,
+        "save_interval": 60
+    }
+
 def create_config_file(config_dir, source_path, output_dir, patterns_file, threads, enable_audio_analysis=False):
     """Create a config file for the organizer"""
+    # Get cache settings if interactive mode
+    if interactive_mode:
+        cache_settings = get_cache_settings_interactive()
+    else:
+        # Default cache settings
+        cache_settings = {
+            "enable_cache": True,
+            "cache_file": "./cache/audio_analysis_cache.pkl",
+            "max_cache_size_mb": 100,
+            "cache_expiration_days": 30,
+            "background_saving": True,
+            "save_interval": 60
+        }
+    
     config = {
         "source_path": str(source_path),
         "output_path": str(output_dir),
@@ -409,7 +490,8 @@ def create_config_file(config_dir, source_path, output_dir, patterns_file, threa
         "logging_level": "INFO",
         "analysis_timeout": 10,
         "loop_min_duration": 1.0,
-        "oneshot_max_duration": 1.5
+        "oneshot_max_duration": 1.5,
+        "cache_settings": cache_settings
     }
     
     config_file = config_dir / "config.json"

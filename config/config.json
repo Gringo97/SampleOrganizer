@@ -1,12 +1,12 @@
 {
-    "source_path": "D:/Oscar/Documents/SOUNDS/SPLICEE",
+    "source_path": "D:/Oscar/Documents/SOUNDS/PRUEBAORGANIZAR",
     "output_path": "organized_samples",
     "patterns_file": "config/patterns.json",
-    "threads": 4,
+    "threads": 2,
     "process_subfolders": true,
     "overwrite_existing": false,
     "move_files": false,
-    "generate_report": true,
+    "generate_report": false,
     "backup_original": false,
     "enable_audio_analysis": true,
     "ignore_patterns": [
@@ -32,5 +32,15 @@
     "oneshot_max_duration": 1.5,
     "percussive_threshold": 0.6,
     "harmonic_threshold": 0.6,
-    "high_energy_threshold": 0.7
+    "high_energy_threshold": 0.7,
+    "cache_settings": {
+        "enable_cache": true,
+        "cache_file": "./cache/audio_analysis_cache.pkl",
+        "max_cache_size_mb": 100,
+        "cache_expiration_days": 30,
+        "background_saving": true,
+        "save_interval": 60
+    }, 
+    "min_file_size_bytes": 5120,   
+    "max_file_size_bytes": 52428800 
 }

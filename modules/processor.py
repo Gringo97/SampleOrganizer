@@ -61,13 +61,24 @@ class AudioFileProcessor:
         # Create the folder structure
         self._create_initial_folder_structure()
     
-        # Initialize classifier logger - Now moved after self.dest_path is defined
+        # Initialize classifier logger
         self.logger = ClassificationLogger(self.dest_path)
+        
+        # Initialize cache manager if caching is enabled
+        self.cache_manager = None
+        cache_settings = config.get('cache_settings', {})
+        if cache_settings.get('enable_cache', True):
+            from .cache_manager import CacheManager
+            self.cache_manager = CacheManager(config)
+            logging.info("Initialized cache manager")
     
         # Initialize audio analyzer if enabled
         self.audio_analyzer = None
         if config.get('enable_audio_analysis', False) and check_audio_libraries():
-            self.audio_analyzer = AudioAnalyzer(config)
+            # Pass the patterns_file to AudioAnalyzer so it can access category-specific thresholds
+            config['patterns_file'] = str(self.patterns_file)
+            # Pass the cache manager to the audio analyzer
+            self.audio_analyzer = AudioAnalyzer(config, self.cache_manager)
         
         # Initialize caches for file format detection
         self.audio_extensions = set(config.get('audio_extensions', 
@@ -162,6 +173,17 @@ class AudioFileProcessor:
             if self.config.get('generate_report', True):
                 self._generate_report()
             
+            # Add cache statistics to the report if available
+            if self.cache_manager:
+                self.stats['cache_stats'] = self.cache_manager.get_stats()
+                
+            elif self.audio_analyzer and hasattr(self.audio_analyzer, 'get_cache_stats'):
+                self.stats['cache_stats'] = self.audio_analyzer.get_cache_stats()
+            
+            # Shutdown cache manager gracefully
+            if self.cache_manager:
+                self.cache_manager.shutdown()
+                
             # Update final processing time
             self.stats['processing_time'] = time.time() - start_time
             
@@ -171,6 +193,13 @@ class AudioFileProcessor:
             return self.stats
             
         except Exception as e:
+            # Ensure cache is saved even on error
+            if self.cache_manager:
+                try:
+                    self.cache_manager.shutdown()
+                except:
+                    pass
+                    
             logging.error(f"Error during file processing: {str(e)}", exc_info=True)
             raise
     
@@ -194,14 +223,26 @@ class AudioFileProcessor:
         # Skip files in ignore patterns
         if file_path.suffix.lower() in self.non_audio_extensions:
             return False
-            
+        
+        # Skip temporary or metadata files
+        invalid_extensions = {'.xmp', '.tmp', '.asd', '.ds_store', '.ini', ''}
+        invalid_patterns = ['AbletonTmp', 'Tmp', 'temp']
+        
+        # Check extension
+        if file_path.suffix.lower() in invalid_extensions:
+            return False
+        
+        # Check filename for temporary file patterns
+        if any(pattern.lower() in file_path.name.lower() for pattern in invalid_patterns):
+            return False
+                
         # Check if it's a known audio extension
         if file_path.suffix.lower() in self.audio_extensions:
             return True
-            
+                
         # For unknown types, attempt more thorough check
         return self._is_valid_audio(file_path)
-    
+        
     def _is_valid_audio(self, file_path: Path) -> bool:
         """Check if file is a valid audio file"""
         # Skip .asd files and other non-audio files
@@ -286,30 +327,100 @@ class AudioFileProcessor:
             print()
     
     def _process_files_sequential(self, files: List[Path]):
-        """Process files sequentially"""
+        """Process files sequentially with real-time progress display"""
         total_files = len(files)
+        last_progress_time = time.time()
+        progress_interval = 1  # Update progress every second
+        
         for index, file_path in enumerate(files):
             try:
                 self._process_single_file(file_path)
                 
-                # Log progress periodically
-                if (index + 1) % 100 == 0 or (index + 1) == total_files:
-                    elapsed = time.time() - self.stats['start_time']
+                # Show progress in real-time
+                current_time = time.time()
+                if current_time - last_progress_time >= progress_interval or (index + 1) == total_files:
+                    elapsed = current_time - self.stats['start_time']
                     files_per_second = (index + 1) / elapsed if elapsed > 0 else 0
-                    logging.info(f"Processed {index + 1} of {total_files} files ({files_per_second:.2f} files/sec)")
+                    percent_complete = ((index + 1) / total_files) * 100
+                    
+                    # Calculate estimated time remaining
+                    if files_per_second > 0:
+                        remaining_files = total_files - (index + 1)
+                        eta_seconds = remaining_files / files_per_second
+                        eta_str = self._format_time(eta_seconds)
+                    else:
+                        eta_str = "calculating..."
+                    
+                    # Create progress bar
+                    bar_length = 30
+                    filled_length = int(bar_length * (index + 1) // total_files)
+                    bar = '█' * filled_length + '░' * (bar_length - filled_length)
+                    
+                    # Clear line and print progress
+                    print(f"\rProgress: [{bar}] {index + 1}/{total_files} ({percent_complete:.1f}%) | "
+                          f"Speed: {files_per_second:.2f} files/sec | ETA: {eta_str}", end='', flush=True)
+                    
+                    last_progress_time = current_time
+                    
+                    # Also log to file but less frequently
+                    if (index + 1) % 100 == 0 or (index + 1) == total_files:
+                        logging.info(f"Processed {index + 1} of {total_files} files ({percent_complete:.1f}%)")
+                    # Update progress status file
+                    self._update_progress_status()
+            
             except Exception as e:
                 logging.error(f"Error processing {file_path}: {str(e)}")
                 self.stats['failed_files'] += 1
                 self.stats['error_logs'].append(str(e))
+        
+        # Final newline after progress bar
+        print()
     
     def _process_single_file(self, file_path: Path) -> bool:
         """Process a single file"""
         try:
-            # Classify file
-            result = self._classify_file(file_path)
+            # Extensive logging for debugging
+            logging.debug(f"Attempting to process file: {file_path}")
+
+            # Validate file existence and readability
+            if not file_path.exists():
+                logging.warning(f"File does not exist: {file_path}")
+                return False
             
-            # Copy file to new location
-            self._copy_file(file_path, result)
+            try:
+                # Check file permissions and readability
+                file_path.stat()
+            except PermissionError:
+                logging.error(f"Permission denied for file: {file_path}")
+                return False
+            except OSError as e:
+                logging.error(f"OS error accessing file {file_path}: {e}")
+                return False
+
+            # Classify file with timeout mechanism
+            try:
+                result = self._classify_file(file_path)
+            except Exception as classify_error:
+                logging.error(f"Classification failed for {file_path}: {classify_error}", exc_info=True)
+                return False
+
+            # If classification fails silently
+            if result is None:
+                logging.warning(f"No classification result for file: {file_path}")
+                return False
+
+            # More detailed logging
+            if result:
+                logging.debug(f"Classified: {file_path} -> {result.category}/{result.subcategory}")
+            else:
+                logging.warning(f"Classification failed for: {file_path}")
+            
+            # Attempt to copy/move file
+            try:
+                self._copy_file(file_path, result)
+            except Exception as copy_error:
+                logging.error(f"Error copying/moving file {file_path}: {copy_error}", exc_info=True)
+                return False
             
             # Update statistics in a thread-safe way
             with self._stats_lock:
@@ -324,13 +435,12 @@ class AudioFileProcessor:
             return True
             
         except Exception as e:
-            logging.error(f"Error processing {file_path}: {str(e)}")
+            logging.error(f"Comprehensive Error processing {file_path}: {e}", exc_info=True)
             with self._stats_lock:
                 self.stats['failed_files'] += 1
                 self.stats['error_logs'].append(f"{file_path}: {str(e)}")
             return False
     
-    # Update the _classify_file method in AudioFileProcessor class
     def _classify_file(self, file_path: Path) -> ClassificationResult:
         """Classify file using improved pattern matching and audio analysis"""
         # Extract base name and folder paths for matching
@@ -343,32 +453,7 @@ class AudioFileProcessor:
         if self.audio_analyzer:
             audio_features = self.audio_analyzer.analyze_file(file_path)
         
-        # Determine if this is a loop or one-shot
-        is_loop = False
-        is_one_shot = False
-        
-        # First check using pattern matching
-        pattern_loop, pattern_oneshot = self.pattern_matcher.check_loop_or_oneshot(base_name, folder_names)
-        
-        # Then check using audio analysis if available
-        audio_loop, audio_oneshot = False, False
-        if audio_features:
-            audio_loop, audio_oneshot = self.audio_analyzer.detect_loop_oneshot(audio_features)
-        
-        # Combine results, prioritizing pattern matching for loop/oneshot detection
-        # This change gives pattern matching higher priority than audio analysis
-        if pattern_loop or pattern_oneshot:
-            is_loop = pattern_loop
-            is_one_shot = pattern_oneshot
-        elif audio_features:
-            is_loop = audio_loop
-            is_one_shot = audio_oneshot
-        
-        # If both or neither are detected, use pattern matching as fallback
-        if is_loop == is_one_shot:
-            is_loop = pattern_loop
-            is_one_shot = pattern_oneshot
-        
+        # First determine the category based on patterns
         # Collect all potential category matches with scores
         category_scores = {}
         
@@ -387,23 +472,59 @@ class AudioFileProcessor:
                     category_scores[category] = 0
                 category_scores[category] += score * 1.5  # Higher weight for folder matches
         
-        # If no matches, default to UNKNOWN
-        if not category_scores:
-            return ClassificationResult(
-                original_path=file_path,
-                category="UNKNOWN",
-                subcategory="UNMATCHED_SAMPLES",
-                confidence=0.0,
-                matched_patterns=[],
-                is_loop=is_loop,
-                is_one_shot=is_one_shot,
-                audio_features=audio_features
-            )
-        
-        # Determine best category based on scores, priorities, and additional checks
+        # Determine best category and subcategory based on scores
         best_category = self.pattern_matcher.get_best_category(category_scores, base_name, folder_names)
         
-        # Calculate confidence score
+        # Determine if this is a loop or one-shot using pattern matching
+        pattern_loop, pattern_oneshot = self.pattern_matcher.check_loop_or_oneshot(base_name, folder_names)
+        
+        # Determine subcategory
+        subcategory = self.pattern_matcher.determine_subcategory(
+            best_category, base_name, folder_names, pattern_loop, pattern_oneshot
+        )
+        
+        # Now that we know the category and subcategory, use them for audio detection
+        is_loop, is_one_shot = pattern_loop, pattern_oneshot
+        
+        # If audio features are available, use category-specific detection
+        if audio_features and self.audio_analyzer:
+            # Use category and subcategory information for more accurate detection
+            audio_loop, audio_oneshot = self.audio_analyzer.detect_loop_oneshot(
+                audio_features,
+                category=best_category,
+                subcategory=subcategory
+            )
+            
+            # If pattern matching didn't provide a clear result, use audio analysis
+            if not (pattern_loop or pattern_oneshot):
+                is_loop, is_one_shot = audio_loop, audio_oneshot
+            # If audio analysis strongly suggests a one-shot for short files, override
+            elif audio_features.duration < 0.5 and best_category == "DRUMS" and audio_oneshot:
+                is_loop, is_one_shot = False, True
+            # If audio analysis strongly suggests a loop for longer files, override
+            elif audio_features.duration > 3.0 and audio_loop:
+                is_loop, is_one_shot = True, False
+        
+        # If both or neither are detected, make a decision
+        if is_loop == is_one_shot:
+            # Default to based on category conventions
+            if best_category == "DRUMS" and audio_features and audio_features.duration < 1.0:
+                is_loop, is_one_shot = False, True
+            elif best_category == "FX" and audio_features and audio_features.duration > 2.0:
+                is_loop, is_one_shot = True, False
+            # Default to one-shot for very short samples
+            elif audio_features and audio_features.duration < 0.8:
+                is_loop, is_one_shot = False, True
+            # Default to loop for longer samples
+            elif audio_features and audio_features.duration > 2.0:
+                is_loop, is_one_shot = True, False
+        
+        # If no category found, default to UNKNOWN
+        if not best_category or best_category == "UNKNOWN":
+            best_category = "UNKNOWN"
+            subcategory = "UNMATCHED_SAMPLES"
+        
+        # Calculate confidence
         max_score = max(category_scores.values()) if category_scores else 0
         confidence = min(1.0, max_score / 5.0)  # Normalize confidence
         
@@ -412,11 +533,7 @@ class AudioFileProcessor:
         for category, score in category_scores.items():
             pattern_matches.append(f"{category}: {score:.2f}")
         
-        # Determine subcategory
-        subcategory = self.pattern_matcher.determine_subcategory(
-            best_category, base_name, folder_names, is_loop, is_one_shot
-        )
-        
+        # Create the result
         return ClassificationResult(
             original_path=file_path,
             category=best_category,
@@ -427,6 +544,7 @@ class AudioFileProcessor:
             is_one_shot=is_one_shot,
             audio_features=audio_features
         )
+    
     def _copy_file(self, source_path: Path, result: ClassificationResult):
         """Copy file to destination based on classification result"""
         # Determine destination path
@@ -514,6 +632,29 @@ class AudioFileProcessor:
                 avg_confidence = sum(self.stats['confidence_scores']) / len(self.stats['confidence_scores'])
                 f.write(f"Average pattern matching confidence: {avg_confidence:.2f}\n")
             
+            # Add cache statistics if available
+            if 'cache_stats' in self.stats:
+                f.write("\nCache Statistics:\n")
+                cache_stats = self.stats['cache_stats']
+                
+                if 'hit_ratio' in cache_stats:
+                    f.write(f"Hit ratio: {cache_stats['hit_ratio']:.2f}%\n")
+                
+                if 'hits' in cache_stats:
+                    f.write(f"Cache hits: {cache_stats['hits']}\n")
+                
+                if 'misses' in cache_stats:
+                    f.write(f"Cache misses: {cache_stats['misses']}\n")
+                
+                if 'entry_count' in cache_stats:
+                    f.write(f"Cached entries: {cache_stats['entry_count']}\n")
+                    
+                if 'size_mb' in cache_stats:
+                    f.write(f"Cache size: {cache_stats['size_mb']:.2f} MB\n")
+                
+                if 'evictions' in cache_stats:
+                    f.write(f"Cache evictions: {cache_stats['evictions']}\n")
+            
             # Add error logs section
             if self.stats['error_logs']:
                 f.write("\nErrors encountered:\n")
@@ -583,6 +724,7 @@ class AudioFileProcessor:
             
         except Exception as e:
             logging.error(f"Error generating visualizations: {str(e)}")
+    
     def _format_time(self, seconds):
         """Format seconds into a readable time string"""
         if seconds < 60:
@@ -594,56 +736,6 @@ class AudioFileProcessor:
             hours = seconds / 3600
             return f"{hours:.1f} hours"
     
-    def _process_files_sequential(self, files: List[Path]):
-        """Process files sequentially with real-time progress display"""
-        total_files = len(files)
-        last_progress_time = time.time()
-        progress_interval = 1  # Update progress every second
-        
-        for index, file_path in enumerate(files):
-            try:
-                self._process_single_file(file_path)
-                
-                # Show progress in real-time
-                current_time = time.time()
-                if current_time - last_progress_time >= progress_interval or (index + 1) == total_files:
-                    elapsed = current_time - self.stats['start_time']
-                    files_per_second = (index + 1) / elapsed if elapsed > 0 else 0
-                    percent_complete = ((index + 1) / total_files) * 100
-                    
-                    # Calculate estimated time remaining
-                    if files_per_second > 0:
-                        remaining_files = total_files - (index + 1)
-                        eta_seconds = remaining_files / files_per_second
-                        eta_str = self._format_time(eta_seconds)
-                    else:
-                        eta_str = "calculating..."
-                    
-                    # Create progress bar
-                    bar_length = 30
-                    filled_length = int(bar_length * (index + 1) // total_files)
-                    bar = '█' * filled_length + '░' * (bar_length - filled_length)
-                    
-                    # Clear line and print progress
-                    print(f"\rProgress: [{bar}] {index + 1}/{total_files} ({percent_complete:.1f}%) | "
-                          f"Speed: {files_per_second:.2f} files/sec | ETA: {eta_str}", end='', flush=True)
-                    
-                    last_progress_time = current_time
-                    
-                    # Also log to file but less frequently
-                    if (index + 1) % 100 == 0 or (index + 1) == total_files:
-                        logging.info(f"Processed {index + 1} of {total_files} files ({percent_complete:.1f}%)")
-                    # Update progress status file
-                    self._update_progress_status()
-            
-            except Exception as e:
-                logging.error(f"Error processing {file_path}: {str(e)}")
-                self.stats['failed_files'] += 1
-                self.stats['error_logs'].append(str(e))
-        
-        # Final newline after progress bar
-        print()
-
     def _update_progress_status(self):
         """Write current progress to a status file"""
         status_file = self.dest_path / "progress_status.json"
@@ -676,4 +768,3 @@ class AudioFileProcessor:
         # Write to file
         with open(status_file, 'w') as f:
             json.dump(status, f, indent=2)
-

@@ -8,6 +8,44 @@
         "LOOP": "loop|loops|phrase|phrases|groove|riff|adlib",
         "ONE SHOT": "one[\\s_-]*shot|oneshot|single[\\s_-]*hit|hit|stab|accent|impact|tail|slam"
     },
+    "duration_thresholds": {
+        "global": {
+            "loop_min_duration": 1.0,
+            "oneshot_max_duration": 1.5
+        },
+        "DRUMS": {
+            "loop_min_duration": 1.5,
+            "oneshot_max_duration": 1.0,
+            "KICK": {"oneshot_max_duration": 1.0},
+            "SNARE": {"oneshot_max_duration": 1.0},
+            "HAT": {"oneshot_max_duration": 1.0},
+            "CLAP": {"oneshot_max_duration": 1.0},
+            "PERCUSSION": {"oneshot_max_duration": 1.2},
+            "CRASH-RIDE": {"oneshot_max_duration": 2.5}
+        },
+        "BASS": {
+            "loop_min_duration": 2.0,
+            "oneshot_max_duration": 2.0
+        },
+        "VOCALS": {
+            "loop_min_duration": 2.0,
+            "oneshot_max_duration": 3.0
+        },
+        "FX": {
+            "loop_min_duration": 2.0,
+            "oneshot_max_duration": 3.5,
+            "AMBIENT": {"oneshot_max_duration": 5.0, "loop_min_duration": 3.0},
+            "TEXTURE": {"oneshot_max_duration": 4.0, "loop_min_duration": 2.5}, 
+            "DRONE": {"oneshot_max_duration": 6.0, "loop_min_duration": 4.0}
+        },
+        "INSTRUMENTS": {
+            "loop_min_duration": 1.5,
+            "oneshot_max_duration": 2.0,
+            "PADS": {"oneshot_max_duration": 4.0, "loop_min_duration": 2.0},
+            "CHORDS": {"oneshot_max_duration": 3.0, "loop_min_duration": 1.5},
+            "STABS": {"oneshot_max_duration": 3.0, "loop_min_duration": 1.0}
+        }
+    },
     "folder_structure": {
         "BASS": ["LOOP", "ONE SHOT"],
         "DRUMS": {

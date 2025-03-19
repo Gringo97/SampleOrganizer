@@ -107,8 +107,19 @@ class PatternMatcher:
         we = self.pattern_config["we"]
         ci = self.pattern_config["case_insensitive"]
         
+        # Ensure configuration values are strings
+        if not isinstance(wb, str):
+            wb = str(wb) if not isinstance(wb, (bytes, bytearray)) else wb.decode('utf-8')
+        if not isinstance(we, str):
+            we = str(we) if not isinstance(we, (bytes, bytearray)) else we.decode('utf-8')
+        if not isinstance(ci, str):
+            ci = str(ci) if not isinstance(ci, (bytes, bytearray)) else ci.decode('utf-8')
+        
         # Compile base patterns (LOOP and ONE SHOT)
         for key, pattern in self.base_patterns.items():
+            # Ensure pattern is a string
+            if not isinstance(pattern, str):
+                pattern = str(pattern) if not isinstance(pattern, (bytes, bytearray)) else pattern.decode('utf-8')
             compiled['base'][key] = re.compile(f"{ci}{wb}(?:{pattern}){we}")
         
         # Compile category patterns
@@ -118,6 +129,9 @@ class PatternMatcher:
             # Main patterns
             if "mainPatterns" in category_data:
                 for pattern_str in category_data["mainPatterns"]:
+                    # Ensure pattern_str is a string
+                    if not isinstance(pattern_str, str):
+                        pattern_str = str(pattern_str) if not isinstance(pattern_str, (bytes, bytearray)) else pattern_str.decode('utf-8')
                     compiled['categories'][category].append(
                         re.compile(f"{ci}{wb}(?:{pattern_str}){we}")
                     )
@@ -126,6 +140,9 @@ class PatternMatcher:
             if "subPatterns" in category_data:
                 compiled['subcategories'][category] = {}
                 for subcategory, pattern_str in category_data["subPatterns"].items():
+                    # Ensure pattern_str is a string
+                    if not isinstance(pattern_str, str):
+                        pattern_str = str(pattern_str) if not isinstance(pattern_str, (bytes, bytearray)) else pattern_str.decode('utf-8')
                     compiled['subcategories'][category][subcategory] = re.compile(f"{ci}{wb}(?:{pattern_str}){we}")
         
         return compiled

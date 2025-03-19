@@ -36,11 +36,11 @@ class ClassificationLogger:
     def _init_logs(self):
         """Initialize log files with headers"""
         # Initialize JSON log with an empty array
-        with open(self.json_log, 'w') as f:
+        with open(self.json_log, 'w', encoding='utf-8') as f:
             json.dump([], f)
         
         # Initialize CSV log with headers
-        with open(self.csv_log, 'w', newline='') as f:
+        with open(self.csv_log, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow([
                 "Filename", "Category", "Subcategory", "Confidence",
@@ -48,10 +48,10 @@ class ClassificationLogger:
             ])
         
         # Initialize text log with header
-        with open(self.text_log, 'w') as f:
+        with open(self.text_log, 'w', encoding='utf-8') as f:
             f.write("=== Audio Sample Classification Log ===\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-    
+                
     def log_result(self, result: Dict[str, Any]):
         """Log a single classification result"""
         self.current_batch.append(result)
@@ -65,19 +65,12 @@ class ClassificationLogger:
         if not self.current_batch:
             return
         
-        # Append to JSON log
-        try:
-            with open(self.json_log, 'r+') as f:
-                data = json.load(f)
-                data.extend(self.current_batch)
-                f.seek(0)
-                json.dump(data, f, indent=2)
-        except Exception as e:
-            logging.error(f"Error writing to JSON log: {e}")
+        # Skip JSON logging as it's causing issues
+        # Just log to CSV and text files which are working
         
         # Append to CSV log
         try:
-            with open(self.csv_log, 'a', newline='') as f:
+            with open(self.csv_log, 'a', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 for result in self.current_batch:
                     filename = Path(result["file"]).name
@@ -95,7 +88,7 @@ class ClassificationLogger:
         
         # Append to text log
         try:
-            with open(self.text_log, 'a') as f:
+            with open(self.text_log, 'a', encoding='utf-8') as f:
                 for result in self.current_batch:
                     filename = Path(result["file"]).name
                     f.write(f"File: {filename}\n")
@@ -114,7 +107,7 @@ class ClassificationLogger:
                     f.write("\n")
         except Exception as e:
             logging.error(f"Error writing to text log: {e}")
-        
+    
         # Clear the batch
         self.current_batch = []
     
@@ -125,7 +118,7 @@ class ClassificationLogger:
         
         summary_path = self.logs_dir / f"classification_summary_{self.timestamp}.txt"
         try:
-            with open(summary_path, 'w') as f:
+            with open(summary_path, 'w', encoding='utf-8') as f:
                 f.write("=== AUDIO SAMPLE CLASSIFICATION SUMMARY ===\n\n")
                 f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                 
@@ -174,6 +167,5 @@ class ClassificationLogger:
         print("\n=== CLASSIFICATION LOGS ===")
         print(f"Text log: {self.text_log}")
         print(f"CSV log: {self.csv_log}")
-        print(f"JSON log: {self.json_log}")
         if summary_path:
             print(f"Summary: {summary_path}")
